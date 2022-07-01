@@ -1,12 +1,13 @@
 import './App.css';
 import { useState } from 'react';
 import { useEffect } from 'react';
-import { fetchNumbers } from './service/phoneNumberService'
+import { fetchNumbers, commenceDial } from './service/phoneNumberService'
 
 function App() {
   const [numbers, setNumbers] = useState([])
   const [status, setStatus] = useState([])
-  
+  const [enable, setEnable] = useState(false)
+
   useEffect(() => {
     const getNumbers = async () => {
       const numbers = await fetchNumbers();
@@ -21,8 +22,32 @@ function App() {
     setStatus(newStatus);
   }, [numbers.length])
 
+  useEffect(() => {
+    const sse = new EventSource('http://localhost:5001/status');
+
+    sse.addEventListener('open', () => {
+      console.log('SSE opened!');
+    });
+
+    sse.onmessage = e => console.log(JSON.parse(e.data));
+    
+    sse.addEventListener('error', (e) => {
+      console.error('Error: ',  e);
+    });
+
+    return () => {
+      sse.close();
+    };
+  }, []);
+
   if (!numbers) {
     return null;
+  }
+
+  const handleClick = (e) => {
+    e.preventDefault();
+    commenceDial()
+    setEnable(true)
   }
 
   return (
@@ -31,7 +56,7 @@ function App() {
       <ul>
         {numbers.map((number, idx) => <li>{number} {status[idx]} </li>)}
       </ul>
-      <button>Dial</button>
+      <button disabled={enable} onClick={handleClick}>Dial</button>
     </div>
   );
 }

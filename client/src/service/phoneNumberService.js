@@ -8,7 +8,7 @@ export const fetchNumbers = async () => {
   return response.data
 }
 
-const dial = async () => {
+export const commenceDial = async () => {
   await axios.get(`${baseURL}/dial`)
   return
 }

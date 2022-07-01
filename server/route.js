@@ -16,6 +16,8 @@ const phoneNumbers = [
 
 const idMapping = {};
 let currentIndex = 3;
+const statusFromPost = [];
+
 router.get("/", (req, res, next) => {
   res.json(phoneNumbers);
 });
@@ -30,15 +32,31 @@ router.get("/dial", async (req, res, next) => {
   queue.forEach((number, idx) => makeCall(number, idx));
 });
 
+router.get("/status", async(req, res, next) => {
+  res.writeHead(200, {
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'Content-Type': 'text/event-stream',
+  });
+  setInterval(() => {
+    res.write(
+      JSON.stringify({data: statusFromPost})
+    );
+  }, 500);
+})
+
 router.post("/", (req, res, next) => {
   const callInfo = req.body;
   const callId = callInfo.id;
   const callStatus = callInfo.status;
+  statusFromPost[idMapping[callId]] = callStatus
+  console.log(statusFromPost)
   if (callStatus === "completed" && currentIndex < phoneNumbers.length) {
     makeCall(phoneNumbers[currentIndex], currentIndex);
     currentIndex++;
   }
   res.status(200).send();
+
 });
 
 module.exports = router;
