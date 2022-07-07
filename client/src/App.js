@@ -20,17 +20,13 @@ function App() {
       newStatus.push("idle");
     }
     setStatus(newStatus);
-  }, [numbers.length])
+  }, [numbers.length]);
 
   useEffect(() => {
     const sse = new EventSource('http://localhost:5001/status');
 
-    sse.addEventListener('open', () => {
-      console.log('SSE opened!');
-    });
+    sse.onmessage = e => setStatus(JSON.parse(e.data).status);
 
-    sse.onmessage = e => console.log(JSON.parse(e.data));
-    
     sse.addEventListener('error', (e) => {
       console.error('Error: ',  e);
     });

@@ -16,7 +16,10 @@ const phoneNumbers = [
 
 const idMapping = {};
 let currentIndex = 3;
-const statusFromPost = [];
+let statusFromPost = [];
+for (let i = 0; i < phoneNumbers.length; i++) {
+  statusFromPost.push('idle');
+}
 
 router.get("/", (req, res, next) => {
   res.json(phoneNumbers);
@@ -33,30 +36,40 @@ router.get("/dial", async (req, res, next) => {
 });
 
 router.get("/status", async(req, res, next) => {
-  res.writeHead(200, {
-    'Cache-Control': 'no-cache',
-    Connection: 'keep-alive',
-    'Content-Type': 'text/event-stream',
-  });
-  setInterval(() => {
-    res.write(
-      JSON.stringify({data: statusFromPost})
-    );
-  }, 500);
+  res.set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+  })
+
+  let intervalId = setInterval(() => {
+    res.write(`data: ${JSON.stringify({status: statusFromPost})}\n\n`)
+  }, 500)
+
+  if (statusFromPost.every(status => status === 'completed')) {
+    clearInterval(intervalId);
+    res.end();
+  }
 })
 
 router.post("/", (req, res, next) => {
   const callInfo = req.body;
   const callId = callInfo.id;
-  const callStatus = callInfo.status;
-  statusFromPost[idMapping[callId]] = callStatus
-  console.log(statusFromPost)
+  let callStatus = callInfo.status;
+  const index = idMapping[callId];
+
+  if (statusFromPost[index] !== 'completed') {
+    statusFromPost[index] = callStatus;
+  } else {
+    callStatus = 'completed';
+  }
+
   if (callStatus === "completed" && currentIndex < phoneNumbers.length) {
     makeCall(phoneNumbers[currentIndex], currentIndex);
     currentIndex++;
   }
-  res.status(200).send();
 
+  res.status(200).send();
 });
 
 module.exports = router;
